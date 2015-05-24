@@ -4,13 +4,38 @@ var makeRequest = function(){
 	var mapnik_maxlon = document.querySelector("#mapnik_maxlon").getAttribute("value");
 	var mapnik_maxlat = document.querySelector("#mapnik_maxlat").getAttribute("value");
 	var mapnik_scale  = document.querySelector("#mapnik_scale").value;
+	var indicator = null;
 
 	$.ajax({
 		url: "http://render.openstreetmap.org/cgi-bin/export"+"?"+"bbox="+mapnik_minlon+","+mapnik_minlat+","+mapnik_maxlon+","+mapnik_maxlat+"&scale="+mapnik_scale+"&format=svg",
 		method:"GET",
-		dataType:"XML"
-	}).done(processSVG);
+		dataType:"XML",
+		xhr: function()
+		{
+			var xhr = new window.XMLHttpRequest();
+			indicator = $('<div style="position: fixed; top: 50%; left: 50%; z-index: 9999; font-size: 5em; width: 14em; margin-left: -7em; background: rgba(255, 255, 255, 0.5); padding: 0.2em; text-align: center;">bitte warten…</div>').appendTo("body");
+
+			xhr.addEventListener("progress", function(evt){
+			if (evt.lengthComputable) {
+				var percentComplete = evt.loaded / evt.total;
+				//Do something with download progress
+				indicator.text(Math.ceil(percentComplete*100)+"%");
+			}
+			}, false);
+			return xhr;
+		}
+	})
+	.done(processSVG)
+	.fail(function(qXHR, textStatus, errorThrown){
+		alert("sorry, something went wrong!. Check if you got web connection and try again later");
+	})
+	.always(function(){
+		indicator.remove();
+	});
 };
+
+
+
 
 
 var processSVG = function(data){
